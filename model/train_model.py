@@ -14,21 +14,21 @@ model = Sequential([
     base_model,
     GlobalAveragePooling2D(),
     Dense(128, activation='relu'),
-    Dense(1, activation='sigmoid')  # Binary classification
+    Dense(33, activation='softmax')  # Change to 33 for 33 classes
 ])
 
 # Compile the model
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Dataset paths and generators
-dataset_path = "dataset"
+dataset_path = "data"  # Update this to point to your data folder
 datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
 
 train_generator = datagen.flow_from_directory(
     dataset_path,
     target_size=(128, 128),
     batch_size=32,
-    class_mode='binary',
+    class_mode='categorical',  # Use categorical for multi-class
     subset='training'
 )
 
@@ -36,12 +36,15 @@ validation_generator = datagen.flow_from_directory(
     dataset_path,
     target_size=(128, 128),
     batch_size=32,
-    class_mode='binary',
+    class_mode='categorical',  # Use categorical for multi-class
     subset='validation'
 )
 
+# Print the number of classes detected
+print("Number of classes:", train_generator.num_classes)
+
 # Save the best model
-checkpoint = tf.keras.callbacks.ModelCheckpoint(
+checkpoint = ModelCheckpoint(
     'best_model_transfer_learning.keras', monitor='val_accuracy', save_best_only=True
 )
 
@@ -52,8 +55,10 @@ model.fit(
     epochs=7,
     callbacks=[checkpoint]
 )
+
 # Save evaluation metrics
 val_loss, val_accuracy = model.evaluate(validation_generator)
 with open("model/metrics.txt", "w") as f:
     f.write(f"val_accuracy={val_accuracy}\n")
     f.write(f"val_loss={val_loss}\n")
+print("Class indices:", train_generator.class_indices)
